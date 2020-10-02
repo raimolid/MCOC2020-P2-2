@@ -44,13 +44,6 @@ class Reticulado(object):
     def obtener_barras(self):
         return self.barras
 
-
-
-
-
-
-
-
     def agregar_restriccion(self, nodo, gdl, valor=0.0):
         """Agrega una restriccion, dado el nodo, grado de libertad y valor 
         del desplazamiento de dicho grado de libertad
@@ -85,15 +78,9 @@ class Reticulado(object):
             ke = b.obtener_rigidez(self)
             fe = b.obtener_vector_de_cargas(self)
             
-#            print (f'ke = {ke}\n')
-            
             ni,nj = b.obtener_conectividad()
             
-#            print (ni,nj)
-            
             d = [[2*ni,2*ni+1],[2*nj,2*nj+1]]
-            
-#            print (d)
             
             for i in range(self.Ndimensiones):
                 p = d[i]
@@ -105,45 +92,69 @@ class Reticulado(object):
                 self.f[p] += fe[j]
         
     def resolver_sistema(self):
-        return
-#        """Resuelve el sistema de ecuaciones.
-#        La solucion queda guardada en self.u
-#        """
-#
-#        # 0 : Aplicar restricciones
-#        Ngdl = self.Nnodos * self.Ndimensiones
-#        gdl_libres = np.arange(Ngdl)
-#        gdl_restringidos = []
-#
-#        #Identificar gdl_restringidos y llenar u 
-#        # en valores conocidos.
-#        #
-#        # Hint: la funcion numpy.setdiff1d es util
-#
-#
-#        #Agregar cargas nodales a vector de cargas 
-#        for nodo in self.cargas:
-#            for carga in self.cargas[nodo]:
-#                gdl = carga[0]
-#                valor = carga[1]
-#                gdl_global = 2*nodo + gdl
-#                
-#
-#
-#        #1 Particionar:
-#        #       K en Kff, Kfc, Kcf y Kcc.
-#        #       f en ff y fc
-#        #       u en uf y uc
-#        
-#
-#        # Resolver para obtener uf -->  Kff uf = ff - Kfc*uc
-#        
-#        #Asignar uf al vector solucion
-#        self.u[gdl_libres] = uf
-#
-#        #Marcar internamente que se tiene solucion
-#        self.tiene_solucion = True
-#
+        
+        """Resuelve el sistema de ecuaciones.
+        La solucion queda guardada en self.u
+        """
+        # 0 : Aplicar restricciones
+        
+        Ngdl = self.Nnodos * self.Ndimensiones
+        gdl_lib = np.arange(Ngdl)
+        gdl_restringidos = []
+
+        #Identificar gdl_restringidos y llenar u 
+        # en valores conocidos.
+        #
+        # Hint: la funcion numpy.setdiff1d es util
+        
+        for nodo in self.restricciones:
+			for restriccion in self.restricciones[nodo]:
+				gdl_local = restriccion[0]
+				valor = restriccion[1]
+				
+				gdl_global = 2*nodo + gdl_local
+				gdl_restringidos.append(gdl_global)
+				self.u[gdl_global] = valor
+		
+		gdl_libres = np.setdiff1d(gdl_lib,gdl_restringidos)
+		
+        # Agregar cargas nodales a vector de cargas
+            
+        for nodo in self.cargas:
+            for carga in self.cargas[nodo]:
+                gdl = carga[0]
+                valor = carga[1]
+                gdl_global = 2*nodo + gdl
+                self.f[gdl_global] += valor
+                
+        # 1 Particionar:
+        # K en Kff, Kfc, Kcf y Kcc.
+        # f en ff y fc
+        # u en uf y uc
+        
+        Kff=self.K[np.ix_( gdl_libres, gdl_libres)]
+        Kfc=self.K[np.ix_( gdl_libres, gdl_restringidos)]
+        Kcf=Kfc.T
+        Kcc=self.K[np.ix_( gdl_restringidos, gdl_restringidos)]
+        
+        uf=self.u[gdl_libres]
+        uc=self.u[gdl_restringidos]
+        
+        ff=self.f[gdl_libres]
+        fc=self.f[gdl_restringidos]
+        
+        # Resolver para obtener uf -->  Kff uf = ff - Kfc*uc
+        
+        uf=solve(Kff,ff-Kfc@uc)
+        
+        # Asignar uf al vector solucion
+        
+        self.u[gdl_libres] = uf
+
+        # Marcar internamente que se tiene solucion
+        
+        self.tiene_solucion = True
+
     def obtener_desplazamiento_nodal(self, n):
         """Entrega desplazamientos en el nodo n como un vector numpy de (2x1) o (3x1)
         """
@@ -164,11 +175,6 @@ class Reticulado(object):
 #
 #        return fuerzas
         return
-
-
-
-
-
 
     def __str__(self):
         s = "nodos:\n"
