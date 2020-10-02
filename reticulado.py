@@ -116,7 +116,7 @@ class Reticulado(object):
 				gdl_restringidos.append(gdl_global)
 				self.u[gdl_global] = valor
 		
-		gdl_libres = np.setdiff1d(gdl_lib,gdl_restringidos)
+	gdl_libres = np.setdiff1d(gdl_lib,gdl_restringidos)
 		
         # Agregar cargas nodales a vector de cargas
             
