@@ -1,3 +1,4 @@
+  
 import numpy as np
 
 g = 9.81 #kg*m/s^2
@@ -39,45 +40,35 @@ class Barra(object):
         L = self.calcular_largo(reticulado)
         A = self.calcular_area()
         return self.ρ * A * L * g
-
-
-
-
-
-
-
-
-
-
-
+    
     def obtener_rigidez(self, ret):
-        """Devuelve la rigidez ke del elemento. Arreglo numpy de (4x4)
-        ret: instancia de objeto tipo reticulado
-        """
+        L = self.calcular_largo(ret)
+        A = self.calcular_area()
+        k = self.E * A / L
+        Tϴ = np.matrix([-np.cos(60), -np.sin(60), np.cos(60), np.sin(60)])
+        ke = Tϴ.T @ Tϴ * k
+        return np.array(ke)
         
-        #implementar
-
-        return ke
-
     def obtener_vector_de_cargas(self, ret):
-        """Devuelve el vector de cargas nodales fe del elemento. Vector numpy de (4x1)
-        ret: instancia de objeto tipo reticulado
-        """
-
-        #Implementar
-
+        W = self.calcular_peso(ret)
+        v = np.array([[0, -1, 0, -1]])
+        fe = (v.T) * W/2
         return fe
-
-
+        
     def obtener_fuerza(self, ret):
-        """Devuelve la fuerza se que debe resistir la barra. Un escalar tipo double. 
-        ret: instancia de objeto tipo reticulado
-        """
-
-        #Implementar
-
-
+        L = self.calcular_largo(ret)
+        A = self.calcular_area()
+        
+        ni = self.ni
+        nj = self.nj
+        ue = np.array([ret.u[ni*2], ret.u[((2*ni)+1)], ret.u[2*nj], ret.u[((2*nj)+1)]]) 
+        
+        
+        se = ((A * self.E)/L) * np.array([-np.cos(60), -np.sin(60), np.cos(60), np.sin(60)].T) * ue 
         return se
+        
+        
 
-
-
+       
+        
+       
